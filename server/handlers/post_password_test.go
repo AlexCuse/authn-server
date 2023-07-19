@@ -248,9 +248,6 @@ func TestPostPassword(t *testing.T) {
 }
 
 func TestPostPasswordWithTOTP(t *testing.T) {
-	totpSecret := "JKK5AG4NDAWSZSR4ZFKZBWZ7OJGLB2JM"
-	totpSecretEnc := []byte("cli6azfL5i7PAnh8U/w3Zbglsm3XcdaGODy+Ga5QqT02c9hotDAR1Y28--3UihzsJhw/+EU3R6--qUw9L8DwN5XPVfOStshKzA==")
-
 	app := test.App()
 	server := test.Server(app)
 	defer server.Close()
@@ -278,8 +275,10 @@ func TestPostPasswordWithTOTP(t *testing.T) {
 	t.Run("valid totp code", func(t *testing.T) {
 		// given an account
 		account, err := factory("valid@authn.tech", "oldpwd")
-		app.AccountStore.SetTOTPSecret(account.ID, totpSecretEnc)
 		require.NoError(t, err)
+		set, err := app.AccountStore.SetTOTPSecret(account.ID, totpSecretEnc)
+		require.NoError(t, err)
+		require.True(t, set)
 
 		// given a reset token
 		token, err := resets.New(app.Config, account.ID, account.PasswordChangedAt)
@@ -306,8 +305,10 @@ func TestPostPasswordWithTOTP(t *testing.T) {
 	t.Run("invalid totp code", func(t *testing.T) {
 		// given an account
 		account, err := factory("invaild@authn.tech", "oldpwd")
-		app.AccountStore.SetTOTPSecret(account.ID, totpSecretEnc)
 		require.NoError(t, err)
+		set, err := app.AccountStore.SetTOTPSecret(account.ID, totpSecretEnc)
+		require.NoError(t, err)
+		require.True(t, set)
 
 		// given a reset token
 		token, err := resets.New(app.Config, account.ID, account.PasswordChangedAt)
@@ -324,6 +325,6 @@ func TestPostPasswordWithTOTP(t *testing.T) {
 		require.NoError(t, err)
 
 		assert.Equal(t, http.StatusUnprocessableEntity, res.StatusCode)
-		test.AssertErrors(t, res, services.FieldErrors{{"totp", "INVALID_OR_EXPIRED"}})
+		test.AssertErrors(t, res, services.FieldErrors{{Field: "totp", Message: "INVALID_OR_EXPIRED"}})
 	})
 }

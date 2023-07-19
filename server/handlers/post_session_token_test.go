@@ -112,9 +112,6 @@ func TestPostSessionToken(t *testing.T) {
 }
 
 func TestPostSessionTokenWithTOTP(t *testing.T) {
-	totpSecret := "JKK5AG4NDAWSZSR4ZFKZBWZ7OJGLB2JM"
-	totpSecretEnc := []byte("cli6azfL5i7PAnh8U/w3Zbglsm3XcdaGODy+Ga5QqT02c9hotDAR1Y28--3UihzsJhw/+EU3R6--qUw9L8DwN5XPVfOStshKzA==")
-
 	app := test.App()
 	server := test.Server(app)
 	defer server.Close()
@@ -143,7 +140,9 @@ func TestPostSessionTokenWithTOTP(t *testing.T) {
 		// given an account
 		account, err := factory("first@authn.tech", "oldpwd")
 		require.NoError(t, err)
-		app.AccountStore.SetTOTPSecret(account.ID, totpSecretEnc)
+		set, err := app.AccountStore.SetTOTPSecret(account.ID, totpSecretEnc)
+		require.NoError(t, err)
+		require.True(t, set)
 
 		// given a passwordless token
 		token, err := passwordless.New(app.Config, account.ID)
@@ -170,7 +169,9 @@ func TestPostSessionTokenWithTOTP(t *testing.T) {
 		// given an account
 		account, err := factory("second@authn.tech", "oldpwd")
 		require.NoError(t, err)
-		app.AccountStore.SetTOTPSecret(account.ID, totpSecretEnc)
+		set, err := app.AccountStore.SetTOTPSecret(account.ID, totpSecretEnc)
+		require.NoError(t, err)
+		require.True(t, set)
 
 		// given a passwordless token
 		token, err := passwordless.New(app.Config, account.ID)
@@ -186,6 +187,6 @@ func TestPostSessionTokenWithTOTP(t *testing.T) {
 		require.NoError(t, err)
 
 		assert.Equal(t, http.StatusUnprocessableEntity, res.StatusCode)
-		test.AssertErrors(t, res, services.FieldErrors{{"totp", "INVALID_OR_EXPIRED"}})
+		test.AssertErrors(t, res, services.FieldErrors{{Field: "totp", Message: "INVALID_OR_EXPIRED"}})
 	})
 }

@@ -32,14 +32,15 @@ func TestCredentialsVerifierWithTOTPSuccess(t *testing.T) {
 	username := "myname"
 	password := "mysecret"
 	dbEncryptionKey := []byte("DLz2TNDRdWWA5w8YNeCJ7uzcS4WDzQmB")
-	totpSecret := "JKK5AG4NDAWSZSR4ZFKZBWZ7OJGLB2JM"
-	totpSecretEnc := []byte("cli6azfL5i7PAnh8U/w3Zbglsm3XcdaGODy+Ga5QqT02c9hotDAR1Y28--3UihzsJhw/+EU3R6--qUw9L8DwN5XPVfOStshKzA==")
+
 	bcrypted := []byte("$2a$04$lzQPXlov4RFLxps1uUGq4e4wmVjLYz3WrqQw4bSdfIiJRyo3/fk3C")
 
 	cfg := app.Config{BcryptCost: 4, DBEncryptionKey: dbEncryptionKey}
 	store := mock.NewAccountStore()
 	account, _ := store.Create(username, bcrypted)
-	store.SetTOTPSecret(account.ID, totpSecretEnc)
+	set, err := store.SetTOTPSecret(account.ID, totpSecretEnc)
+	require.NoError(t, err)
+	require.True(t, set)
 
 	code, err := totp.GenerateCode(totpSecret, time.Now())
 	require.NoError(t, err)
@@ -91,8 +92,11 @@ func TestCredentialsVerifierWithTOTPFailure(t *testing.T) {
 
 	cfg := app.Config{BcryptCost: 4, DBEncryptionKey: dbEncryptionKey}
 	store := mock.NewAccountStore()
-	account, _ := store.Create(username, bcrypted)
-	store.SetTOTPSecret(account.ID, totpSecretEnc)
+	account, err := store.Create(username, bcrypted)
+	require.NoError(t, err)
+	set, err := store.SetTOTPSecret(account.ID, totpSecretEnc)
+	require.NoError(t, err)
+	require.True(t, set)
 
 	testCases := []struct {
 		code   string

@@ -11,13 +11,9 @@ import (
 	"github.com/keratin/authn-server/app/services"
 	"github.com/keratin/authn-server/lib/route"
 	"github.com/keratin/authn-server/server/test"
-	"github.com/keratin/authn-server/app/services"
-	"github.com/keratin/authn-server/lib/route"
-	"github.com/keratin/authn-server/server/test"
 	"github.com/pquerna/otp/totp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/crypto/bcrypt"
 )
 
 func TestPostSessionSuccess(t *testing.T) {
@@ -97,9 +93,6 @@ func TestPostSessionFailure(t *testing.T) {
 }
 
 func TestPostSessionSuccessWithTOTP(t *testing.T) {
-	totpSecret := "JKK5AG4NDAWSZSR4ZFKZBWZ7OJGLB2JM"
-	totpSecretEnc := []byte("cli6azfL5i7PAnh8U/w3Zbglsm3XcdaGODy+Ga5QqT02c9hotDAR1Y28--3UihzsJhw/+EU3R6--qUw9L8DwN5XPVfOStshKzA==")
-
 	app := test.App()
 	server := test.Server(app)
 	defer server.Close()
@@ -128,9 +121,6 @@ func TestPostSessionSuccessWithTOTP(t *testing.T) {
 }
 
 func TestPostSessionSuccessWithSessionAndTOTP(t *testing.T) {
-	totpSecret := "JKK5AG4NDAWSZSR4ZFKZBWZ7OJGLB2JM"
-	totpSecretEnc := []byte("cli6azfL5i7PAnh8U/w3Zbglsm3XcdaGODy+Ga5QqT02c9hotDAR1Y28--3UihzsJhw/+EU3R6--qUw9L8DwN5XPVfOStshKzA==")
-
 	app := test.App()
 	server := test.Server(app)
 	defer server.Close()
@@ -188,7 +178,7 @@ func TestPostSessionFailureWithTOTP(t *testing.T) {
 		totpCode string
 		errors   services.FieldErrors
 	}{
-		{"foo", "bar", "12345", services.FieldErrors{{"totp", "INVALID_OR_EXPIRED"}}},
+		{"foo", "bar", "12345", services.FieldErrors{{Field: "totp", Message: "INVALID_OR_EXPIRED"}}},
 	}
 
 	for _, tc := range testCases {

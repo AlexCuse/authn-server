@@ -101,9 +101,6 @@ func TestPasswordlessTokenVerifier(t *testing.T) {
 }
 
 func TestPasswordlessTokenVerifierWithTOTP(t *testing.T) {
-	totpSecret := "JKK5AG4NDAWSZSR4ZFKZBWZ7OJGLB2JM"
-	totpSecretEnc := []byte("cli6azfL5i7PAnh8U/w3Zbglsm3XcdaGODy+Ga5QqT02c9hotDAR1Y28--3UihzsJhw/+EU3R6--qUw9L8DwN5XPVfOStshKzA==")
-
 	accountStore := mock.NewAccountStore()
 	cfg := &app.Config{
 		AuthNURL:                    &url.URL{Scheme: "http", Host: "authn.example.com"},
@@ -122,14 +119,17 @@ func TestPasswordlessTokenVerifierWithTOTP(t *testing.T) {
 	}
 
 	invoke := func(token string, totpCode string) error {
-		_, err := services.PasswordlessTokenVerifier(accountStore, &ops.LogReporter{logrus.New()}, cfg, token, totpCode)
+		_, err := services.PasswordlessTokenVerifier(accountStore, &ops.LogReporter{FieldLogger: logrus.New()}, cfg, token, totpCode)
 		return err
 	}
 
 	t.Run("with good code", func(t *testing.T) {
 		account, err := accountStore.Create("first@keratin.tech", []byte("old"))
-		accountStore.SetTOTPSecret(account.ID, totpSecretEnc)
 		require.NoError(t, err)
+		set, err := accountStore.SetTOTPSecret(account.ID, totpSecretEnc)
+		require.NoError(t, err)
+		require.True(t, set)
+
 		token := newToken(account.ID)
 
 		code, err := totp.GenerateCode(totpSecret, time.Now())
@@ -141,8 +141,11 @@ func TestPasswordlessTokenVerifierWithTOTP(t *testing.T) {
 
 	t.Run("with bad code", func(t *testing.T) {
 		account, err := accountStore.Create("second@keratin.tech", []byte("old"))
-		accountStore.SetTOTPSecret(account.ID, totpSecretEnc)
 		require.NoError(t, err)
+		set, err := accountStore.SetTOTPSecret(account.ID, totpSecretEnc)
+		require.NoError(t, err)
+		require.True(t, set)
+
 		token := newToken(account.ID)
 
 		err = invoke(token, "12345")
