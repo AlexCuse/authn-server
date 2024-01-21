@@ -39,7 +39,7 @@ func GetOauth(app *app.App, providerName string) http.HandlerFunc {
 		}
 		nonce := base64.StdEncoding.EncodeToString(bytes)
 		http.SetCookie(w, nonceCookie(app.Config, string(nonce)))
-		
+
 		// save nonce and return URL into state param
 		stateToken, err := oauth.New(app.Config, string(nonce), redirectURI)
 		if err != nil {
@@ -52,6 +52,12 @@ func GetOauth(app *app.App, providerName string) http.HandlerFunc {
 			return
 		}
 		returnURL := app.Config.AuthNURL.String() + "/oauth/" + providerName + "/return"
-		http.Redirect(w, r, provider.Config(returnURL).AuthCodeURL(state), http.StatusSeeOther)
+
+		config, err := provider.Config(returnURL)
+		if err != nil {
+			fail(err)
+			return
+		}
+		http.Redirect(w, r, config.AuthCodeURL(state), http.StatusSeeOther)
 	}
 }
